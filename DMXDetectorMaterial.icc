@@ -1,0 +1,582 @@
+//
+// ********************************************************************
+// * License and Disclaimer                                           *
+// *                                                                  *
+// * The  Geant4 software  is  copyright of the Copyright Holders  of *
+// * the Geant4 Collaboration.  It is provided  under  the terms  and *
+// * conditions of the Geant4 Software License,  included in the file *
+// * LICENSE and available at  http://cern.ch/geant4/license .  These *
+// * include a list of copyright holders.                             *
+// *                                                                  *
+// * Neither the authors of this software system, nor their employing *
+// * institutes,nor the agencies providing financial support for this *
+// * work  make  any representation or  warranty, express or implied, *
+// * regarding  this  software system or assume any liability for its *
+// * use.  Please see the license in the file  LICENSE  and URL above *
+// * for the full disclaimer and the limitation of liability.         *
+// *                                                                  *
+// * This  code  implementation is the result of  the  scientific and *
+// * technical work of the GEANT4 collaboration.                      *
+// * By using,  copying,  modifying or  distributing the software (or *
+// * any work based  on the software)  you  agree  to acknowledge its *
+// * use  in  resulting  scientific  publications,  and indicate your *
+// * acceptance of all terms of the Geant4 Software license.          *
+// ********************************************************************
+//
+//
+// GEANT4 tag $Name:
+//
+// Author: Alex Howard (alexander.howard@cern.ch)
+//
+// History:
+// -----------
+//
+// 23rd November 2002 Modified GXe and LXe material tables to include new
+//                    scintillation method - Alex Howard
+//
+  G4double density,      // density
+    a,                   // atomic mass
+    z;                   // atomic number
+  G4String name,         // name
+    symbol;              // symbol
+  G4int ncomponents,     // n components
+    iz,                  // number of protons
+    in;                  // number of nuceons
+  G4double abundance,    // abundance
+    temperature,         // temperature
+    pressure;            // pressure
+
+  G4int natoms;  
+  
+
+  // making vacuum
+  G4Material* vacuum = new G4Material 
+    (name="Vacuum", z=1., a=1.*g/mole, density=1.e-20*g/cm3,
+     kStateGas, temperature=0.1*kelvin, pressure=1.e-20*bar);
+
+  // xenons
+  G4Element* elementXe = new G4Element( "Xenon", "Xe", 54., 131.29*g/mole );
+  G4Material* LXe = new G4Material
+     ("LXe", 3.02*g/cm3, 1, kStateLiquid, 173.15*kelvin, 1.5*atmosphere );
+  G4Material* GXe = new G4Material
+     ("GXe", 0.005887*g/cm3, 1, kStateGas, 173.15*kelvin, 1.5*atmosphere );
+  LXe->AddElement( elementXe, 1);
+  GXe->AddElement( elementXe, 1);
+
+  const G4int NUMENTRIES = 3;
+  //  G4double LXe_PP[NUMENTRIES]    = { 7.07*eV, 7.07*eV };
+  G4double LXe_PP[NUMENTRIES]    = { 7.0*eV , 7.07*eV, 7.14*eV };
+  G4double LXe_SCINT[NUMENTRIES] = { 0.1, 1.0, 0.1 };
+  G4double LXe_RIND[NUMENTRIES]  = { 1.59 , 1.57, 1.54 };
+  G4double LXe_ABSL[NUMENTRIES]  = { 35.*cm, 35.*cm, 35.*cm}; //atten length
+  G4MaterialPropertiesTable *LXe_mt = new G4MaterialPropertiesTable();
+  LXe_mt->AddProperty("FASTCOMPONENT", LXe_PP, LXe_SCINT, NUMENTRIES);
+  LXe_mt->AddProperty("SLOWCOMPONENT", LXe_PP, LXe_SCINT, NUMENTRIES);
+  LXe_mt->AddProperty("RINDEX",        LXe_PP, LXe_RIND,  NUMENTRIES);
+  LXe_mt->AddProperty("ABSLENGTH",     LXe_PP, LXe_ABSL,  NUMENTRIES);
+  LXe_mt->AddConstProperty("SCINTILLATIONYIELD",12000./MeV); // include QE 20%
+  // and 13eV creation energy for photons - may be 15eV?
+  // Fano factor assumed 1; should be much less for Xe ~ 0.13
+  // but the Fano factor is already partially included in the correlated 
+  // electron production - therefore not the absolute Fano factor here:
+  LXe_mt->AddConstProperty("RESOLUTIONSCALE",1.0);
+  LXe_mt->AddConstProperty("FASTTIMECONSTANT",20.*ns);
+  LXe_mt->AddConstProperty("SLOWTIMECONSTANT",45.*ns);
+  LXe_mt->AddConstProperty("YIELDRATIO",1.0);
+  LXe->SetMaterialPropertiesTable(LXe_mt);
+
+  //  G4double GXe_PP[NUMENTRIES]    = { 7.07*eV, 7.07*eV };
+  G4double GXe_PP[NUMENTRIES]    = { 7.0*eV, 7.07*eV, 7.14*eV };
+  G4double GXe_SCINT[NUMENTRIES] = { 0.1, 1.0, 0.1 };
+  G4double GXe_RIND[NUMENTRIES]  = { 1.00, 1.00, 1.00 };
+  G4double GXe_ABSL[NUMENTRIES]  = { 100*m, 100*m, 100*m}; //atten length
+  G4MaterialPropertiesTable *GXe_mt = new G4MaterialPropertiesTable();
+  GXe_mt->AddProperty("FASTCOMPONENT", GXe_PP, GXe_SCINT, NUMENTRIES);
+  GXe_mt->AddProperty("SLOWCOMPONENT", GXe_PP, GXe_SCINT, NUMENTRIES);
+  GXe_mt->AddProperty("RINDEX",        GXe_PP, GXe_RIND,  NUMENTRIES);
+  GXe_mt->AddProperty("ABSLENGTH",     GXe_PP, GXe_ABSL,  NUMENTRIES);
+  GXe_mt->AddConstProperty("SCINTILLATIONYIELD",12000./MeV); // include QE 20%
+  GXe_mt->AddConstProperty("RESOLUTIONSCALE",1.0);
+  GXe_mt->AddConstProperty("FASTTIMECONSTANT",20.*ns);
+  GXe_mt->AddConstProperty("SLOWTIMECONSTANT",45.*ns);
+  GXe_mt->AddConstProperty("YIELDRATIO",1.0);
+  GXe->SetMaterialPropertiesTable(GXe_mt);
+
+  G4Element* O  = new G4Element
+    (name="Oxygen"  ,symbol="O" , z= 8., a=15.99*g/mole);
+  G4Element* Si = new G4Element
+    (name="Silicon",symbol="Si" , z= 14., a=28.09*g/mole);
+
+  // making acrylic
+  G4Element* H = new G4Element
+    (name="Hydrogen",symbol="H" , z= 1., a=1.00794*g/mole);
+  G4Element* C  = new G4Element( "Carbon", "C",   6. , 12.011*g/mole);
+  G4Material* acrylic = new G4Material
+    (name="acrylic", density=1.14*g/cm3, ncomponents=3);
+  acrylic->AddElement(H, 0.0703);
+  acrylic->AddElement(C, 0.5580);
+  acrylic->AddElement(O, 0.3717);
+
+  //carbon composite
+  G4Material* Ccomposite = new G4Material
+    (name="Ccomposite", density=2.00*g/cm3, ncomponents=2);
+  Ccomposite->AddElement(C, 1);
+  Ccomposite->AddElement(H, 2);	
+
+  const G4int AC1_NUMENTRIES = 31;
+
+G4double acrylic_PP1[AC1_NUMENTRIES]   = { 200.0*nm, 220.0*nm, 240.0*nm, 260.0*nm, 280.0*nm, 300.0*nm, 320.0*nm, 340.0*nm, 360.0*nm, 380.0*nm, 400.0*nm, 420.0*nm, 440.0*nm, 460.0*nm, 480.0*nm, 500.0*nm, 520.0*nm, 540.0*nm, 560.0*nm, 580.0*nm, 600.0*nm, 620.0*nm, 640.0*nm, 660.0*nm, 680.0*nm, 700.0*nm, 720.0*nm, 740.0*nm, 760.0*nm, 780.0*nm, 800.0*nm }; // lambda range 4 ri
+  
+  G4double acrylic_RIND[AC1_NUMENTRIES] = { 1.59816, 1.57399, 1.55692, 1.54436, 1.5348, 1.52732, 1.52133, 1.51644, 1.51238, 1.50897, 1.50607, 1.50357, 1.50139, 1.49949, 1.49781, 1.49632, 1.49498, 1.49378, 1.49269, 1.49171, 1.49081, 1.48999, 1.48924, 1.48854, 1.4879, 1.4873, 1.48675, 1.48624, 1.48576, 1.48531, 1.48488 };     // ref index
+
+  const G4int AC2_NUMENTRIES = 35;
+  
+  G4double acrylic_PP2[AC2_NUMENTRIES]   = { 200.0*nm, 220.0*nm, 240.0*nm, 260.0*nm, 280.0*nm, 300.0*nm, 310.0*nm, 320.0*nm, 330.0*nm, 340.0*nm, 350.0*nm, 360.0*nm, 380.0*nm, 400.0*nm, 420.0*nm, 440.0*nm, 450.0*nm, 460.0*nm, 480.0*nm, 500.0*nm, 520.0*nm, 540.0*nm, 560.0*nm, 580.0*nm, 600.0*nm, 620.0*nm, 640.0*nm, 660.0*nm, 680.0*nm, 700.0*nm, 720.0*nm, 740.0*nm, 760.0*nm, 780.0*nm, 800.0*nm }; // lambda range 4 ri
+
+  G4double acrylic_ABSL[AC2_NUMENTRIES] = { 0.249165*mm, 0.249165*mm, 0.249165*mm, 0.249165*mm, 2.39349*mm, 22.9885*mm, 69.9301*mm, 100.0*mm, 140.056*mm, 200.0*mm, 270.27*mm, 380.228*mm, 751.88*mm, 1129.94*mm, 1227.6*mm, 1343.72*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm, 1410.44*mm };// atten length
+
+  G4MaterialPropertiesTable *acrylic_mt = new G4MaterialPropertiesTable();
+  acrylic_mt->AddProperty("RINDEX", acrylic_PP1, acrylic_RIND, AC1_NUMENTRIES);
+  acrylic_mt->AddProperty("ABSLENGTH", acrylic_PP2, acrylic_ABSL, AC2_NUMENTRIES);
+  acrylic->SetMaterialPropertiesTable(acrylic_mt);
+
+  // aluminium
+  G4Element* Al = new G4Element
+    (name="Aluminium"  ,symbol="Al" , z= 13., a=26.98*g/mole);  
+  G4Material* metalAl = new G4Material
+    (name="MetalAluminium", density=2.700*g/cm3, ncomponents=1);
+  metalAl->AddElement(Al, 1);
+
+  const G4int AL_NUMENTRIES = 2;  
+  G4double AL_PP[AL_NUMENTRIES]   = { 60.*nm, 800.0*nm }; //
+  G4double AL_ABSL[AL_NUMENTRIES] = { 1.0e-20*mm, 1.0e-20*mm };// atten length
+  G4MaterialPropertiesTable *al_mt = new G4MaterialPropertiesTable();
+  al_mt->AddProperty("ABSLENGTH", AL_PP, AL_ABSL, AL_NUMENTRIES);
+  metalAl->SetMaterialPropertiesTable(al_mt);
+  
+  // photocathode aluminium
+  G4Material* cathmetalAl = new G4Material
+    (name="CathodeMetalAluminium", density=2.700*g/cm3, ncomponents=1);
+  cathmetalAl->AddElement(Al, 1);
+
+  G4double cathmetal_PP[NUMENTRIES]   = { 5.0*eV, 6.69*eV, 7.50*eV };
+  G4double cathmetal_RIND[NUMENTRIES] = { 1.51, 1.57, 1.61 };     // ref index
+  G4double cathmetal_ABSL[NUMENTRIES] = { 1.e-20*m,  1.e-20*m,  1.e-20*m };// atten length
+//  G4double cathmetal_ABSL[NUMENTRIES] = { 3.0*cm, 3.0*cm, 3.0*cm };// atten length
+  G4MaterialPropertiesTable *cathmetal_mt = new G4MaterialPropertiesTable();
+  cathmetal_mt->AddProperty("RINDEX", cathmetal_PP, cathmetal_RIND,NUMENTRIES);
+  cathmetal_mt->AddProperty("ABSLENGTH", cathmetal_PP, cathmetal_ABSL, NUMENTRIES);
+  cathmetalAl->SetMaterialPropertiesTable(cathmetal_mt);
+
+  // iron
+  G4Element* Fe = new G4Element
+    (name="Iron"  ,symbol="Fe" , z= 26., a=55.85*g/mole);  
+  G4Material* metalFe = new G4Material
+    (name="MetalIron", density=7.874*g/cm3, ncomponents=1);
+  metalFe->AddElement(Fe, 1);
+
+  // stainless steel
+  G4Element* Co = new G4Element( "Cobalt", "Co", 27. , 58.9332*g/mole);
+  G4Material* ssteel = new G4Material
+    (name="Steel", density=7.7*g/cm3, ncomponents=3);
+  ssteel->AddElement(C, 0.04);
+  ssteel->AddElement(Fe, 0.88);
+  ssteel->AddElement(Co, 0.08);
+
+  // mild steel
+  G4Element* Mn = new G4Element("Manganese", "Mn", 25., 54.938*g/mole);
+  G4Element* S = new G4Element("Sulfur","S", 16., 32.065*g/mole);
+  G4Element* P = new G4Element("Phosphorus", "P", 15., 30.973*g/mole);
+  G4Material* msteel = new G4Material
+    (name="MSteel",density=7.85*g/cm3, ncomponents=5);
+  msteel->AddElement(Fe, 0.9881);
+  msteel->AddElement(Mn, 0.009);
+  msteel->AddElement(S,  0.0005);
+  msteel->AddElement(P,  0.0004);
+  msteel->AddElement(C,  0.002);
+  
+ //germanium
+  G4Element* Ge  = new G4Element
+    (name="Germanium"  ,symbol="Ge" , z= 32., a=73.921*g/mole);
+  G4Material* BEGe = new G4Material
+    (name="Ge_Crystal", density=5.323*g/cm3, ncomponents=1);
+  BEGe->AddElement(Ge, 1.0);
+
+  // copper
+  G4Element* Cu = new G4Element
+    (name="Copper"  ,symbol="Cu" , z= 29., a=63.55*g/mole);  
+  G4Material* metalCu = new G4Material
+    (name="MetalCopper", density=8.960*g/cm3, ncomponents=1);
+  metalCu->AddElement(Cu, 1);
+
+  // lead
+  G4Element* Pb = new G4Element
+    (name="Lead",symbol="Pb" , z= 82., a=207.2*g/mole);
+  G4Material* metalPb = new G4Material
+    (name="MetalLead", density=11.340*g/cm3, ncomponents=1);
+  metalPb->AddElement(Pb, 1);
+
+/*
+  // Americium: - NOTE it's AmO2..........
+  G4Isotope* Am241 = new G4Isotope
+    (name="Americium241", iz= 95, in=241, a=241.0*g/mole);
+  G4Element* Am = new G4Element
+    (name="Americium241", "Am", ncomponents=1);
+  Am->AddIsotope(Am241, abundance=1);
+  G4Material* sourceAm = new G4Material
+    (name="AmericiumSource", density=13.61*g/cm3, ncomponents=2);
+  sourceAm->AddElement(Am, 1);
+  sourceAm->AddElement(O , 2);
+*/
+
+  // using Uranium because Americium not yet defined for RDM
+  G4Isotope* U235 = new G4Isotope
+    (name="Uranium235", iz= 92, in=235, a=235.0*g/mole);
+  G4Element* U = new G4Element
+    (name="Uranium", "U", ncomponents=1);
+  U->AddIsotope(U235, abundance=1);
+  G4Material* sourceAm = new G4Material
+    (name="UraniumSource", density=13.61*g/cm3, ncomponents=1);
+  sourceAm->AddElement(U, 1);
+
+  // air
+  G4Element* N = new G4Element
+    (name="Nitrogen",symbol="N" , z= 7., a=14.00674*g/mole);
+  G4Material* Air = new G4Material
+    ("AIR", 1.2929*kg/m3, 2, kStateGas, 300.00*kelvin, 1.0*atmosphere);
+  Air->AddElement(N, 0.8);
+  Air->AddElement(O , 0.2);
+
+  // liquid nitrogen:
+  G4Material* LN2 = new G4Material
+    ("LN2", 0.8*g/cm3, 1, kStateLiquid, 77.*kelvin, 1.0*atmosphere);
+  LN2->AddElement(N, 1);
+
+  //concrete
+  G4Element* Ca = new G4Element
+    (name="Calcium",symbol="Ca" , z= 20., a=40.078*g/mole);
+  G4Material* concrete = new G4Material
+    (name="Concrete", density=2.3*g/cm3, ncomponents=6);
+  concrete->AddElement(Si, 0.227915);
+  concrete->AddElement(O, 0.60541);
+  concrete->AddElement(H, 0.09972);
+  concrete->AddElement(Ca, 0.04986);
+  concrete->AddElement(Al, 0.014245);
+  concrete->AddElement(Fe, 0.00285);
+
+  //water
+  G4Material* water = new G4Material
+    (name="water", density=1.00*g/cm3, ncomponents=2);
+  water->AddElement(H , 2);
+  water->AddElement(O , 1);
+
+  // wood
+  G4Material* wood = new G4Material
+    (name="wood", density=0.9*g/cm3, ncomponents=3);
+  wood->AddElement(H , 4);
+  wood->AddElement(O , 1);
+  wood->AddElement(C , 2);
+  
+  // mineral oil
+  G4Material* moil = new G4Material
+    (name="Mineral_Oil", density=0.77*g/cm3, ncomponents=2);
+  moil->AddElement(C, 0.8563);
+  moil->AddElement(H, 0.1437);
+
+  // C3F8
+  G4Element* F = new G4Element(name="Fluorine",symbol="F" , z= 9., a= 18.99*g/mole);  
+  G4Material* C3F8 = new G4Material
+    (name="C3F8", density=1.3768*g/cm3, ncomponents=2);
+  //C3F8->AddElement(C, 0.1916404);
+  //C3F8->AddElement(F, 0.8083596);
+  C3F8->AddElement(C, natoms=3);
+  C3F8->AddElement(F, natoms=8);
+
+  // C15H24_lab
+  G4Material* C15H24_lab = new G4Material
+    (name="C15H24_lab", density=0.867*g/cm3, ncomponents=2);
+  C15H24_lab->AddElement(C, 0.8815);
+  C15H24_lab->AddElement(H, 0.1185);
+
+  // C16H26_lab
+  G4Material* C16H26_lab = new G4Material
+    (name="C16H26_lab", density=0.867*g/cm3, ncomponents=2);
+  C16H26_lab->AddElement(C, 0.8799);
+  C16H26_lab->AddElement(H, 0.1201);
+
+  // C17H28_lab
+  G4Material* C17H28_lab = new G4Material
+    (name="C17H28_lab", density=0.867*g/cm3, ncomponents=2);
+  C17H28_lab->AddElement(C, 0.8785);
+  C17H28_lab->AddElement(H, 0.1215);
+
+  // C18H30_lab
+  G4Material* C18H30_lab = new G4Material
+    (name="C18H30_lab", density=0.867*g/cm3, ncomponents=2);
+  C18H30_lab->AddElement(C, 0.8772);
+  C18H30_lab->AddElement(H, 0.1228);
+
+  // C19H32_lab
+  G4Material* C19H32_lab = new G4Material
+    (name="C19H32_lab", density=0.867*g/cm3, ncomponents=2);
+  C19H32_lab->AddElement(C, 0.8761);
+  C19H32_lab->AddElement(H, 0.1239);
+
+  // LAB
+  G4Material* the_LAB = new G4Material
+    (name="the_LAB", density=0.867*g/cm3, ncomponents=5);
+  the_LAB->AddMaterial(C15H24_lab, 0.012);
+  the_LAB->AddMaterial(C16H26_lab, 0.204);
+  the_LAB->AddMaterial(C17H28_lab, 0.432);
+  the_LAB->AddMaterial(C18H30_lab, 0.334);
+  the_LAB->AddMaterial(C19H32_lab, 0.018);
+
+  // Styrofoam
+  G4Material* styrofoam = new G4Material
+    (name="styrofoam", density=0.10*g/cm3, ncomponents=2);
+  styrofoam->AddElement(H , 0.0774);
+  styrofoam->AddElement(C , 0.9226);
+
+  // Propylene glycol
+  //propylene glycol
+  //CH3CHOHCH2OH
+  //C_3 H_8 O_2
+  //Carbon = 12.0107
+  //Hydrogen = 1.00794
+  //Oxygen = 15.999
+  //density=1.0361
+  G4Material* pglycol = new G4Material
+    (name="pglycol", density=1.0361*g/cm3, ncomponents=3);
+  pglycol->AddElement(H , 0.10597);
+  pglycol->AddElement(C , 0.47352);
+  pglycol->AddElement(O , 0.42051);
+
+  // CF3I
+  G4Element* I = new G4Element(name="Iodine",symbol="I", z= 53., a= 126.904*g/mole);  
+  G4Material* CF3I = new G4Material
+    (name="CF3I", density=1.982*g/cm3, ncomponents=3);
+  CF3I->AddElement(C, 0.061307);
+  CF3I->AddElement(F, 0.290925);
+  CF3I->AddElement(I, 0.647768);
+
+  // ptfe
+  G4Material* ptfe = new G4Material
+    (name="ptfe", density=2.2*g/cm3, ncomponents=2);
+  ptfe->AddElement(C, 0.24018);
+  ptfe->AddElement(F, 0.75982);
+
+  // neoprene
+  G4Element* Cl = new G4Element(name="Chlorine", symbol="Cl", z = 17.0, a = 35.453* g/mole );    
+  G4Material* neoprene = new G4Material
+    (name="neoprene", density=1.23*g/cm3, ncomponents=3);
+  neoprene->AddElement(H, 0.0569);
+  neoprene->AddElement(C, 0.5426);
+  neoprene->AddElement(Cl, 0.4004);
+
+  // epoxy
+  G4Material* epoxy = new G4Material
+    (name="epoxy", density=1.3*g/cm3, ncomponents=4);
+  epoxy->AddElement(H, 0.0641);
+  epoxy->AddElement(C, 0.6420);
+  epoxy->AddElement(Cl, 0.0902);
+  epoxy->AddElement(O, 0.2036);
+
+  // pp
+  G4Material* pp = new G4Material
+    (name="pp", density=0.855*g/cm3, ncomponents=2);
+  pp->AddElement(H, 0.143);
+  pp->AddElement(C, 0.857);
+
+  // pvc
+  G4Material* pvc = new G4Material
+    (name="pvc", density=1.375*g/cm3, ncomponents=3);
+  pvc->AddElement(H, 0.04839);
+  pvc->AddElement(C, 0.38438);
+  pvc->AddElement(Cl, 0.56724);
+
+  // pe
+  G4Material* pe = new G4Material
+    (name="pe", density=0.91*g/cm3, ncomponents=2);
+  pe->AddElement(H, 0.1437);
+  pe->AddElement(C, 0.8563);
+
+  // bubble_wrap
+  G4Material* bubble_wrap = new G4Material
+    (name="bubble_wrap", density=0.01*g/cm3, ncomponents=2);
+  bubble_wrap->AddMaterial(Air,0.97222);
+  bubble_wrap->AddMaterial(pe,0.02778);
+
+  // tetrabutyltin
+
+  G4Element* Sn = new G4Element
+    (name="Tin",symbol="Sn" , z= 50., a=118.710*g/mole);
+  G4Material* tetrabutyltin = new G4Material
+    (name="tetrabutyltin", density=1.057*g/cm3, ncomponents=3);
+  tetrabutyltin->AddElement(C, 16);
+  tetrabutyltin->AddElement(H, 36);
+  tetrabutyltin->AddElement(Sn, 1);
+
+  //Tin
+  G4Material* metalSn = new G4Material
+    (name="MetalTin", density=7.31*g/cm3, ncomponents=1);
+  metalSn->AddElement(Sn, 1);
+
+  // LAB + Tin
+  G4Material* the_LAB_Tin = new G4Material
+    (name="the_LAB_Tin", density=0.924*g/cm3, ncomponents=2);
+  the_LAB_Tin->AddMaterial(the_LAB, 0.70);
+  the_LAB_Tin->AddMaterial(tetrabutyltin, 0.30);
+
+  // teflón
+  G4Material* teflon = new G4Material
+    (name="teflon", density=2.20*g/cm3, ncomponents=2);
+  teflon->AddElement(H, 2);
+  teflon->AddElement(F, 4);
+
+ // celulosa
+  G4Material* celulosa = new G4Material
+    (name="celulosa", density=0.75*g/cm3, ncomponents=3);
+  celulosa->AddElement(C, 6);
+  celulosa->AddElement(H, 10);
+  celulosa->AddElement(O, 5);
+
+ // BoPET
+  G4Material* BoPET = new G4Material
+    (name="BoPET", density=1.38*g/cm3, ncomponents=3);
+  BoPET->AddElement(C, 0.625017);
+  BoPET->AddElement(H, 0.041959);
+  BoPET->AddElement(O, 0.333025);
+
+
+  const G4int NUMENTRIES_TIN1 = 296;
+  
+  G4double the_LAB_Tin_PP1[NUMENTRIES_TIN1]    = { 200.0*nm, 213.0*nm, 215.0*nm, 217.0*nm, 219.0*nm, 221.0*nm, 223.0*nm, 225.0*nm, 227.0*nm, 229.0*nm, 231.0*nm, 233.0*nm, 235.0*nm, 237.0*nm, 239.0*nm, 241.0*nm, 243.0*nm, 245.0*nm, 247.0*nm, 249.0*nm, 251.0*nm, 253.0*nm, 255.0*nm, 257.0*nm, 259.0*nm, 261.0*nm, 263.0*nm, 265.0*nm, 267.0*nm, 269.0*nm, 271.0*nm, 273.0*nm, 275.0*nm, 277.0*nm, 279.0*nm, 281.0*nm, 283.0*nm, 285.0*nm, 287.0*nm, 289.0*nm, 291.0*nm, 293.0*nm, 295.0*nm, 297.0*nm, 299.0*nm, 301.0*nm, 303.0*nm, 305.0*nm, 307.0*nm, 309.0*nm, 311.0*nm, 313.0*nm, 315.0*nm, 317.0*nm, 319.0*nm, 321.0*nm, 323.0*nm, 325.0*nm, 327.0*nm, 329.0*nm, 331.0*nm, 333.0*nm, 335.0*nm, 337.0*nm, 339.0*nm, 341.0*nm, 343.0*nm, 345.0*nm, 347.0*nm, 349.0*nm, 351.0*nm, 353.0*nm, 355.0*nm, 357.0*nm, 359.0*nm, 361.0*nm, 363.0*nm, 365.0*nm, 367.0*nm, 369.0*nm, 371.0*nm, 373.0*nm, 375.0*nm, 377.0*nm, 379.0*nm, 381.0*nm, 383.0*nm, 385.0*nm, 387.0*nm, 389.0*nm, 391.0*nm, 393.0*nm, 395.0*nm, 397.0*nm, 399.0*nm, 401.0*nm, 403.0*nm, 405.0*nm, 407.0*nm, 409.0*nm, 411.0*nm, 413.0*nm, 415.0*nm, 417.0*nm, 419.0*nm, 421.0*nm, 423.0*nm, 425.0*nm, 427.0*nm, 429.0*nm, 431.0*nm, 433.0*nm, 435.0*nm, 437.0*nm, 439.0*nm, 441.0*nm, 443.0*nm, 445.0*nm, 447.0*nm, 449.0*nm, 451.0*nm, 453.0*nm, 455.0*nm, 457.0*nm, 459.0*nm, 461.0*nm, 463.0*nm, 465.0*nm, 467.0*nm, 469.0*nm, 471.0*nm, 473.0*nm, 475.0*nm, 477.0*nm, 479.0*nm, 481.0*nm, 483.0*nm, 485.0*nm, 487.0*nm, 489.0*nm, 491.0*nm, 493.0*nm, 495.0*nm, 497.0*nm, 499.0*nm, 501.0*nm, 503.0*nm, 505.0*nm, 507.0*nm, 509.0*nm, 511.0*nm, 513.0*nm, 515.0*nm, 517.0*nm, 519.0*nm, 521.0*nm, 523.0*nm, 525.0*nm, 527.0*nm, 529.0*nm, 531.0*nm, 533.0*nm, 535.0*nm, 537.0*nm, 539.0*nm, 541.0*nm, 543.0*nm, 545.0*nm, 547.0*nm, 549.0*nm, 551.0*nm, 553.0*nm, 555.0*nm, 557.0*nm, 559.0*nm, 561.0*nm, 563.0*nm, 565.0*nm, 567.0*nm, 569.0*nm, 571.0*nm, 573.0*nm, 575.0*nm, 577.0*nm, 579.0*nm, 581.0*nm, 583.0*nm, 585.0*nm, 587.0*nm, 589.0*nm, 591.0*nm, 593.0*nm, 595.0*nm, 597.0*nm, 599.0*nm, 601.0*nm, 603.0*nm, 605.0*nm, 607.0*nm, 609.0*nm, 611.0*nm, 613.0*nm, 615.0*nm, 617.0*nm, 619.0*nm, 621.0*nm, 623.0*nm, 625.0*nm, 627.0*nm, 629.0*nm, 631.0*nm, 633.0*nm, 635.0*nm, 637.0*nm, 639.0*nm, 641.0*nm, 643.0*nm, 645.0*nm, 647.0*nm, 649.0*nm, 651.0*nm, 653.0*nm, 655.0*nm, 657.0*nm, 659.0*nm, 661.0*nm, 663.0*nm, 665.0*nm, 667.0*nm, 669.0*nm, 671.0*nm, 673.0*nm, 675.0*nm, 677.0*nm, 679.0*nm, 681.0*nm, 683.0*nm, 685.0*nm, 687.0*nm, 689.0*nm, 691.0*nm, 693.0*nm, 695.0*nm, 697.0*nm, 699.0*nm, 701.0*nm, 703.0*nm, 705.0*nm, 707.0*nm, 709.0*nm, 711.0*nm, 713.0*nm, 715.0*nm, 717.0*nm, 719.0*nm, 721.0*nm, 723.0*nm, 725.0*nm, 727.0*nm, 729.0*nm, 731.0*nm, 733.0*nm, 735.0*nm, 737.0*nm, 739.0*nm, 741.0*nm, 743.0*nm, 745.0*nm, 747.0*nm, 749.0*nm, 751.0*nm, 753.0*nm, 755.0*nm, 757.0*nm, 759.0*nm, 761.0*nm, 763.0*nm, 765.0*nm, 767.0*nm, 769.0*nm, 771.0*nm, 773.0*nm, 775.0*nm, 777.0*nm, 779.0*nm, 781.0*nm, 783.0*nm, 785.0*nm, 787.0*nm, 789.0*nm, 791.0*nm, 793.0*nm, 795.0*nm, 797.0*nm, 799.0*nm, 800.0*nm };
+  
+  G4double the_LAB_Tin_RIND[NUMENTRIES_TIN1]  = { 1.75541, 1.75541, 1.75541, 1.7526, 1.74552, 1.73503, 1.72202, 1.70736, 1.69194, 1.67662, 1.66228, 1.65227, 1.64307, 1.63526, 1.62846, 1.62243, 1.61699, 1.61204, 1.60748, 1.60326, 1.59933, 1.59565, 1.59218, 1.58892, 1.58582, 1.58288, 1.58009, 1.57742, 1.57488, 1.57244, 1.57011, 1.56787, 1.56571, 1.56365, 1.56165, 1.55973, 1.55788, 1.55609, 1.55437, 1.5527, 1.55108, 1.54952, 1.548, 1.54654, 1.54511, 1.54373, 1.54239, 1.54109, 1.53982, 1.53859, 1.5374, 1.53623, 1.5351, 1.534, 1.53293, 1.53188, 1.53086, 1.52987, 1.5289, 1.52795, 1.52703, 1.52613, 1.52525, 1.52439, 1.52355, 1.52273, 1.52193, 1.52115, 1.52039, 1.51964, 1.51891, 1.51819, 1.51749, 1.5168, 1.51613, 1.51547, 1.51483, 1.5142, 1.51358, 1.51297, 1.51238, 1.5118, 1.51122, 1.51066, 1.51012, 1.50958, 1.50905, 1.50853, 1.50802, 1.50752, 1.50703, 1.50655, 1.50608, 1.50561, 1.50516, 1.50471, 1.50427, 1.50383, 1.50341, 1.50299, 1.50258, 1.50218, 1.50178, 1.50139, 1.501, 1.50063, 1.50025, 1.49989, 1.49953, 1.49918, 1.49883, 1.49848, 1.49815, 1.49781, 1.49749, 1.49717, 1.49685, 1.49654, 1.49623, 1.49593, 1.49563, 1.49533, 1.49504, 1.49476, 1.49448, 1.4942, 1.49392, 1.49366, 1.49339, 1.49313, 1.49287, 1.49261, 1.49236, 1.49212, 1.49187, 1.49163, 1.49139, 1.49116, 1.49093, 1.4907, 1.49047, 1.49025, 1.49003, 1.48982, 1.4896, 1.48939, 1.48918, 1.48898, 1.48877, 1.48857, 1.48838, 1.48818, 1.48799, 1.4878, 1.48761, 1.48742, 1.48724, 1.48706, 1.48688, 1.4867, 1.48653, 1.48635, 1.48618, 1.48601, 1.48585, 1.48568, 1.48552, 1.48536, 1.4852, 1.48504, 1.48488, 1.48473, 1.48458, 1.48443, 1.48428, 1.48413, 1.48398, 1.48384, 1.4837, 1.48356, 1.48342, 1.48328, 1.48314, 1.48301, 1.48287, 1.48274, 1.48261, 1.48248, 1.48235, 1.48223, 1.4821, 1.48198, 1.48185, 1.48173, 1.48161, 1.48149, 1.48137, 1.48126, 1.48114, 1.48103, 1.48091, 1.4808, 1.48069, 1.48058, 1.48047, 1.48036, 1.48025, 1.48015, 1.48004, 1.47994, 1.47984, 1.47973, 1.47963, 1.47953, 1.47943, 1.47933, 1.47924, 1.47914, 1.47904, 1.47895, 1.47885, 1.47876, 1.47867, 1.47858, 1.47849, 1.4784, 1.47831, 1.47822, 1.47813, 1.47804, 1.47796, 1.47787, 1.47779, 1.4777, 1.47762, 1.47754, 1.47745, 1.47737, 1.47729, 1.47721, 1.47713, 1.47705, 1.47698, 1.4769, 1.47682, 1.47675, 1.47667, 1.4766, 1.47652, 1.47645, 1.47637, 1.4763, 1.47623, 1.47616, 1.47609, 1.47602, 1.47595, 1.47588, 1.47581, 1.47574, 1.47567, 1.4756, 1.47554, 1.47547, 1.4754, 1.47534, 1.47527, 1.47521, 1.47515, 1.47508, 1.47502, 1.47496, 1.47489, 1.47483, 1.47477, 1.47471, 1.47465, 1.47459, 1.47453, 1.47447, 1.47441, 1.47435, 1.47429, 1.47424, 1.47418, 1.47412, 1.47407, 1.47401, 1.47395, 1.4739, 1.47384, 1.47379, 1.47373, 1.47368, 1.47363, 1.47360,};
+
+  const G4int NUMENTRIES_TIN2 = 101;
+
+  G4double the_LAB_Tin_PP2[NUMENTRIES_TIN2]    = { 200.0*nm, 204.0*nm, 208.0*nm, 212.0*nm, 216.0*nm, 220.0*nm, 224.0*nm, 228.0*nm, 232.0*nm, 236.0*nm, 240.0*nm, 244.0*nm, 248.0*nm, 252.0*nm, 256.0*nm, 260.0*nm, 264.0*nm, 268.0*nm, 272.0*nm, 276.0*nm, 280.0*nm, 284.0*nm, 288.0*nm, 292.0*nm, 296.0*nm, 300.0*nm, 304.0*nm, 308.0*nm, 312.0*nm, 316.0*nm, 320.0*nm, 324.0*nm, 328.0*nm, 332.0*nm, 336.0*nm, 340.0*nm, 344.0*nm, 348.0*nm, 352.0*nm, 356.0*nm, 360.0*nm, 364.0*nm, 368.0*nm, 372.0*nm, 376.0*nm, 380.0*nm, 384.0*nm, 388.0*nm, 392.0*nm, 396.0*nm, 400.0*nm, 404.0*nm, 408.0*nm, 412.0*nm, 416.0*nm, 420.0*nm, 424.0*nm, 428.0*nm, 432.0*nm, 436.0*nm, 440.0*nm, 444.0*nm, 448.0*nm, 452.0*nm, 456.0*nm, 460.0*nm, 464.0*nm, 468.0*nm, 472.0*nm, 476.0*nm, 480.0*nm, 484.0*nm, 488.0*nm, 492.0*nm, 496.0*nm, 500.0*nm, 504.0*nm, 508.0*nm, 512.0*nm, 516.0*nm, 520.0*nm, 524.0*nm, 528.0*nm, 532.0*nm, 536.0*nm, 540.0*nm, 544.0*nm, 548.0*nm, 552.0*nm, 556.0*nm, 560.0*nm, 564.0*nm, 568.0*nm, 572.0*nm, 576.0*nm, 580.0*nm, 584.0*nm, 588.0*nm, 592.0*nm, 596.0*nm, 800.0*nm };
+
+  G4double the_LAB_Tin_ABSL[NUMENTRIES_TIN2]  = { 7.87815e-05*mm, 0.000158718*mm, 0.000150706*mm, 0.000167642*mm, 0.000247367*mm, 0.000677804*mm, 0.00695461*mm, 0.0271749*mm, 0.0364594*mm, 0.036294*mm, 0.02685*mm, 0.017827*mm, 0.0122925*mm, 0.00946247*mm, 0.00811422*mm, 0.00671276*mm, 0.00858868*mm, 0.0102181*mm, 0.059927*mm, 0.177476*mm, 0.639643*mm, 0.914433*mm, 1.00798*mm, 1.06943*mm, 1.30497*mm, 1.74685*mm, 2.47323*mm, 3.78572*mm, 6.84289*mm, 11.107*mm, 14.6668*mm, 20.381*mm, 46.9278*mm, 182.826*mm, 569.121*mm, 1835.07*mm, 3044.01*mm, 3896.98*mm, 4933.4*mm, 6186.52*mm, 7364.7*mm, 8661.42*mm, 9707.39*mm, 12488.3*mm, 15950.2*mm, 17771.9*mm, 20289.6*mm, 21019.0*mm, 27158.0*mm, 33297.0*mm, 39436.0*mm, 45575.0*mm, 51714.0*mm, 57853.0*mm, 63992.0*mm, 70131.0*mm, 76270.0*mm, 82409.0*mm, 88548.0*mm, 94687.0*mm, 100826.0*mm, 106965.0*mm, 113104.0*mm, 119243.0*mm, 125382.0*mm, 131521.0*mm, 137660.0*mm, 143799.0*mm, 149938.0*mm, 156077.0*mm, 162216.0*mm, 168355.0*mm, 174494.0*mm, 180633.0*mm, 186772.0*mm, 192880.0*mm, 170218.0*mm, 119947.0*mm, 134871.0*mm, 106003.0*mm, 118008.0*mm, 109176.0*mm, 142798.0*mm, 189147.0*mm, 102984.0*mm, 69766.2*mm, 68685.3*mm, 71184.7*mm, 79118.8*mm, 114845.0*mm, 192290.0*mm, 179022.0*mm, 206327.0*mm, 139264.0*mm, 79387.3*mm, 53684.0*mm, 46585.6*mm, 47583.3*mm, 48159.0*mm, 53196.7*mm, 53196.7*mm }; //atten length
+
+  const G4int NUMENTRIES_TIN = 201;
+
+  G4double the_LAB_Tin_PP[NUMENTRIES_TIN]    = { 200.0*nm, 203.0*nm, 205.0*nm, 207.0*nm, 209.0*nm, 211.0*nm, 213.0*nm, 215.0*nm, 217.0*nm, 219.0*nm, 221.0*nm, 223.0*nm, 225.0*nm, 227.0*nm, 229.0*nm, 231.0*nm, 233.0*nm, 235.0*nm, 237.0*nm, 239.0*nm, 241.0*nm, 243.0*nm, 245.0*nm, 247.0*nm, 249.0*nm, 251.0*nm, 253.0*nm, 255.0*nm, 257.0*nm, 259.0*nm, 261.0*nm, 263.0*nm, 265.0*nm, 267.0*nm, 269.0*nm, 271.0*nm, 273.0*nm, 275.0*nm, 277.0*nm, 279.0*nm, 281.0*nm, 283.0*nm, 285.0*nm, 287.0*nm, 289.0*nm, 291.0*nm, 293.0*nm, 295.0*nm, 297.0*nm, 299.0*nm, 301.0*nm, 303.0*nm, 305.0*nm, 307.0*nm, 309.0*nm, 311.0*nm, 313.0*nm, 315.0*nm, 317.0*nm, 319.0*nm, 321.0*nm, 323.0*nm, 325.0*nm, 327.0*nm, 329.0*nm, 331.0*nm, 333.0*nm, 335.0*nm, 337.0*nm, 339.0*nm, 341.0*nm, 343.0*nm, 345.0*nm, 347.0*nm, 349.0*nm, 351.0*nm, 353.0*nm, 355.0*nm, 357.0*nm, 359.0*nm, 361.0*nm, 363.0*nm, 365.0*nm, 367.0*nm, 369.0*nm, 371.0*nm, 373.0*nm, 375.0*nm, 377.0*nm, 379.0*nm, 381.0*nm, 383.0*nm, 385.0*nm, 387.0*nm, 389.0*nm, 391.0*nm, 393.0*nm, 395.0*nm, 397.0*nm, 399.0*nm, 401.0*nm, 403.0*nm, 405.0*nm, 407.0*nm, 409.0*nm, 411.0*nm, 413.0*nm, 415.0*nm, 417.0*nm, 419.0*nm, 421.0*nm, 423.0*nm, 425.0*nm, 427.0*nm, 429.0*nm, 431.0*nm, 433.0*nm, 435.0*nm, 437.0*nm, 439.0*nm, 441.0*nm, 443.0*nm, 445.0*nm, 447.0*nm, 449.0*nm, 451.0*nm, 453.0*nm, 455.0*nm, 457.0*nm, 459.0*nm, 461.0*nm, 463.0*nm, 465.0*nm, 467.0*nm, 469.0*nm, 471.0*nm, 473.0*nm, 475.0*nm, 477.0*nm, 479.0*nm, 481.0*nm, 483.0*nm, 485.0*nm, 487.0*nm, 489.0*nm, 491.0*nm, 493.0*nm, 495.0*nm, 497.0*nm, 499.0*nm, 501.0*nm, 503.0*nm, 505.0*nm, 507.0*nm, 509.0*nm, 511.0*nm, 513.0*nm, 515.0*nm, 517.0*nm, 519.0*nm, 521.0*nm, 523.0*nm, 525.0*nm, 527.0*nm, 529.0*nm, 531.0*nm, 533.0*nm, 535.0*nm, 537.0*nm, 539.0*nm, 541.0*nm, 543.0*nm, 545.0*nm, 547.0*nm, 549.0*nm, 551.0*nm, 553.0*nm, 555.0*nm, 557.0*nm, 559.0*nm, 561.0*nm, 563.0*nm, 565.0*nm, 567.0*nm, 569.0*nm, 571.0*nm, 573.0*nm, 575.0*nm, 577.0*nm, 579.0*nm, 581.0*nm, 583.0*nm, 585.0*nm, 587.0*nm, 589.0*nm, 591.0*nm, 593.0*nm, 595.0*nm, 597.0*nm, 599.0*nm, 800.0*nm};
+
+  G4double the_LAB_Tin_SCINT[NUMENTRIES_TIN]    = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.3325e-05, 2.5735e-05, 2.774e-05, 4.345e-05, 6.395e-05, 3.86e-05, 2.735e-05, 2.53e-05, 2.98e-05, 3.375e-05, 3.22e-05, 3.295e-05, 4.1e-05, 3.865e-05, 6.52e-05, 7.65e-05, 0.000134, 0.0022, 0.00484, 0.0088, 0.011, 0.01276, 0.01408, 0.0132, 0.01364, 0.01408, 0.01628, 0.01892, 0.02068, 0.02244, 0.02112, 0.0198, 0.01848, 0.01672, 0.01584, 0.01628, 0.01672, 0.01672, 0.01672, 0.01584, 0.01385, 0.0125, 0.0114, 0.0108, 0.0104, 0.01, 0.0095, 0.00905, 0.00855, 0.00785, 0.00725, 0.0065, 0.00595, 0.00535, 0.00485, 0.0046, 0.0042, 0.0039, 0.00365, 0.0034, 0.0031, 0.00295, 0.0027, 0.00235, 0.0022, 0.002, 0.0018, 0.00165, 0.00145, 0.00135, 0.00125, 0.00115, 0.001, 0.00095, 0.0009, 0.00075, 0.00075, 0.00065, 0.0006, 0.00055, 0.00045, 0.00045, 0.0004, 0.00035, 0.00035, 0.00025, 0.0003, 0.00025, 0.0002, 0.0002, 0.0002, 0.00015, 0.00015, 0.00015, 0.00015, 0.0001, 0.0001, 0.0001, 0.0001, 5e-05, 0.0001, 5e-05, 5e-05, 5e-05, 5e-05, 5e-05, 5e-05, 5e-05, 5e-05, 0.0, 5e-05, 5e-05, 0.0, 5e-05, 0.0, 5e-05, 0.0, 5e-05, 0.0, 0.0, 5e-05, 0.0, 0.0, 5e-05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+
+  G4MaterialPropertiesTable *the_LAB_Tin_mt = new G4MaterialPropertiesTable();
+
+  the_LAB_Tin_mt->AddProperty("FASTCOMPONENT", the_LAB_Tin_PP, the_LAB_Tin_SCINT, NUMENTRIES_TIN);
+  the_LAB_Tin_mt->AddProperty("SLOWCOMPONENT", the_LAB_Tin_PP, the_LAB_Tin_SCINT, NUMENTRIES_TIN);
+  the_LAB_Tin_mt->AddProperty("RINDEX",        the_LAB_Tin_PP1, the_LAB_Tin_RIND,  NUMENTRIES_TIN1);
+  the_LAB_Tin_mt->AddProperty("ABSLENGTH",     the_LAB_Tin_PP2, the_LAB_Tin_ABSL,  NUMENTRIES_TIN2);
+  the_LAB_Tin_mt->AddConstProperty("SCINTILLATIONYIELD",6545./MeV); // 55% of 11900./MeV for LAB
+  the_LAB_Tin_mt->AddConstProperty("FASTTIMECONSTANT",4.6*ns);
+  the_LAB_Tin_mt->AddConstProperty("SLOWTIMECONSTANT",18.*ns);
+  the_LAB_Tin_mt->AddConstProperty("RESOLUTIONSCALE",1.0);
+  the_LAB_Tin_mt->AddConstProperty("YIELDRATIO",1.0);
+  the_LAB_Tin->SetMaterialPropertiesTable(the_LAB_Tin_mt);
+  //the_LAB_Tin->SetMaterialPropertiesTable(LXe_mt);
+
+  // print materials
+  //  G4cout << *(G4Material::GetMaterialTable()) << G4endl;
+  //  G4cout << *(G4Isotope::GetIsotopeTable())   << G4endl;
+  //  G4cout << *(G4Element::GetElementTable())   << G4endl;
+
+  //HPGe-ICN detector materiasl
+  G4Element* Li = new G4Element	
+    (name="Lithium",symbol="Li" , z= 3., a=6.941*g/mole);
+  G4Material* li = new G4Material
+    (name="lithium", density=0.534*g/cm3, ncomponents=1);
+  li->AddElement(Li, 1);
+  G4Material* carb = new G4Material
+    (name="carb", density=2.0*g/cm3, ncomponents=1);
+  carb->AddElement(C,1);
+  G4Element* B = new G4Element
+    (name="Boron",symbol="B" , z= 5., a=10.81*g/mole);
+  G4Material * boron = new G4Material
+    (name="boron", density=2.37*g/cm3, ncomponents=1);
+  boron->AddElement(B,1);
+
+       LiContactMater = li;
+          EndgapMater = carb;
+	 ContactMater = boron;
+
+  // assign materials
+            world_mat = concrete;
+              lab_mat = Air;
+       steel_tank_mat = ssteel;
+         air_tank_mat = Air;
+  insulation_tank_mat = styrofoam;
+ inner_steel_tank_mat = ssteel;
+       water_tank_mat = water;
+  pressure_vessel_mat = ssteel;
+      mineral_oil_mat = moil;
+ propylene_glycol_mat = pglycol;
+      acrylic_jar_mat = acrylic;
+           Pb_jar_mat = metalPb;
+         the_C3F8_mat = C3F8;
+         the_CF3I_mat = CF3I;
+          the_LAB_mat = the_LAB;
+        the_water_mat = water;
+       jar_flange_mat = acrylic;
+    bellow_flange_mat = ssteel;
+          bellows_mat = ssteel;
+     accumulator1_mat = ssteel;
+     accumulator2_mat = ssteel;
+        gasket_pv_mat = ptfe;
+       glass_port_mat = acrylic;
+      gasket_port_mat = ptfe;
+      bucket_port_mat = neoprene;
+            piezo_mat = epoxy;
+            cable_mat = pp;
+ calibration_tube_mat = pvc; 
+        foam_base_mat = neoprene;
+    air_foam_base_mat = Air;
+          pp_base_mat = pp;
+         pp_raise_mat = pp;
+       ppair_base_mat = Air;
+      ppair_raise_mat = Air;
+         fermi_PE_mat = pe;
+      bubble_wrap_mat = bubble_wrap; 
+            tanks_mat = pp;
+      water_tanks_mat = water;
+    tetrabutyltin_mat = tetrabutyltin;
+      the_LAB_Tin_mat = the_LAB_Tin;
+     polyethylene_mat = BoPET;
+    cupboard_mat = wood;
+  cryostatwindow = Ccomposite;
+       glass_mat = acrylic;
+       panel_mat = metalAl;
+        door_mat = wood;
+	desk_mat = wood;
+       crate_mat = metalAl;
+   LN2jacket_mat = ssteel;
+         LN2_mat = LN2;
+      jacket_mat = ssteel;
+jacketflange_mat = ssteel;
+      vacuum_mat = vacuum;
+      copper_mat = metalCu;
+      teflon_mat = teflon;
+	BEGe_mat = BEGe;
+      carton_mat = celulosa;
+        vessel_mat = ssteel;
+//         GXe_mat = GXe;
+         GXe_mat = LXe;
+         LXe_mat = LXe;
+       alpha_mat = metalPb;
+   americium_mat = sourceAm;
+        ring_mat = ssteel;
+      mirror_mat = metalAl;
+        grid_mat = LXe;
+         pmt_mat = acrylic;
+      phcath_mat = cathmetalAl;
+   reflector_mat = metalAl;
+   Pbshield_mat = metalPb;
+   Snshield_mat = metalSn;
+    Cushield_mat = metalCu;
+  shieldcover_mat = msteel;
+   marinelli_mat = pp;
+        watc_mat = pp;
