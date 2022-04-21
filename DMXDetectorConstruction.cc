@@ -285,8 +285,27 @@ G4VPhysicalVolume* DMXDetectorConstruction::Construct() {
   G4double rmaxShield3 = rminShield3 + Shield3Width; //                                                          
   G4double HeadShieldWidth = 6*cm;
   G4double HeadPos = Shield1pos + 0.5*heightShield1 + 0.5*HeadShieldWidth; //  
+  
+  G4double rminCu = 38*mm; //Min radius lining Cu part 1
+  G4double LinCuwidth = 1.6*mm; //Width of Cu Graded Lining
+  G4double rlinCu= rminCu + LinCuwidth; //Max radius of Graded Lining Cu
+  G4double ShieldPbwidth1 = 204.9*mm; //Width of Pb Part 1
+  G4double rPbShield = rlinCu + ShieldPbwidth1; // Max radius Shield Pb Part 1
+  G4double ShieldStwidth = 9.5*mm; // Width of Outer Jacket Carbon Steel
+  G4double rStShield = rPbShield + ShieldStwidth; // Max Radius Steel Jacket Part 1
+  G4double rminCu2 = 139.5*mm; //Min radius lining Cu part2
+  G4double rlinCu2 = rminCu2 + LinCuwidth; //Max radius of Graded Lining Cu 2
+  G4double ShieldPbwidth2 = 103.4 mm; //Width of Pb Part 2
+  G4double rPbshield2 = rlinCu2 + ShieldPbwidth2; //Max radius Shield Pd Part 2
+  G4double rStShield2 = rPbshield2 + ShieldStwidth; // Max radius Steel Jacket Part 2
+  G4double heightpart1 = 0.5*116*mm; // Height Part 1 Shield
+  G4double heightpart2 = 0.5*407*mm; // Height Part 2 Shield
+  G4double rmaxlead = 244.5*mm; // Max radius of Cu and Pb lead
+  G4double heightleadPb = 101.9*mm; // Height of Pb lead
+  G4double rmaxleadSt = rmaxlead + ShieldStwidth // Max radius os Outer Jacket  Carbon Steel Lead
 
-  // -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-                                                                                   
+
+ // -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-                                                                                   
   // Experimental setup parameters                                                                                     
   // -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-                                                                                   
 
