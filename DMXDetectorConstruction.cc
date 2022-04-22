@@ -548,6 +548,7 @@ G4VPhysicalVolume* DMXDetectorConstruction::Construct() {
   logicShieldH = new G4LogicalVolume(solidShieldH, shieldcover_mat, "logicShieldH");
   physiShieldH = new G4PVPlacement(0, G4ThreeVector(0.,0.,HeadPos),"physiShieldH",logicShieldH,lab_phys,false, checkOverlaps);
   
+  //TABLE
 
   G4Box* solidTable = new G4Box("solidTable",tableX,tableX,0.5*tableY);
   logicTable = new G4LogicalVolume(solidTable, panel_mat, "logicTable");
