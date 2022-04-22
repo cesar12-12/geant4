@@ -302,7 +302,7 @@ G4VPhysicalVolume* DMXDetectorConstruction::Construct() {
   G4double heightpart2 = 0.5*407*mm; // Height Part 2 Shield
   G4double rmaxlead = 244.5*mm; // Max radius of Cu and Pb lead
   G4double heightleadPb = 101.9*mm; // Height of Pb lead
-  G4double rmaxleadSt = rmaxlead + ShieldStwidth // Max radius os Outer Jacket  Carbon Steel Lead
+  G4double rmaxleadSt = rmaxlead + ShieldStwidth; // Max radius os Outer Jacket  Carbon Steel Lead
 
 
  // -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-                                                                                   
