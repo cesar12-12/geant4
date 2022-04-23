@@ -547,7 +547,10 @@ G4VPhysicalVolume* DMXDetectorConstruction::Construct() {
   G4Tubs* solidShieldH = new G4Tubs("solidShieldH",rmin1, rmaxShield3,0.5*HeadShieldWidth,phimin,phimax);
   logicShieldH = new G4LogicalVolume(solidShieldH, shieldcover_mat, "logicShieldH");
   physiShieldH = new G4PVPlacement(0, G4ThreeVector(0.,0.,HeadPos),"physiShieldH",logicShieldH,lab_phys,false, checkOverlaps);
-  
+
+  //NEW SHIELD CONSTRUCTION
+
+  G4Tubs* LiningCu1 = new G4Tubs("LiningCu1", rminCu, rlinCu, heightpart1, phimmin, phimax);  
   //TABLE
 
   G4Box* solidTable = new G4Box("solidTable",tableX,tableX,0.5*tableY);
