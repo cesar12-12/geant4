@@ -550,7 +550,8 @@ G4VPhysicalVolume* DMXDetectorConstruction::Construct() {
 
   //NEW SHIELD CONSTRUCTION
 
-  G4Tubs* LiningCu1 = new G4Tubs("LiningCu1", rminCu, rlinCu, heightpart1, phimmin, phimax);  
+  G4Tubs* LiningCu1 = new G4Tubs("LiningCu1", rminCu, rlinCu, heightpart1, phimin, phimax);
+  logicLin1 = new G$LogicalVolume( LinCu1, Cushield_mat, "logicLin1");  
   //TABLE
 
   G4Box* solidTable = new G4Box("solidTable",tableX,tableX,0.5*tableY);
