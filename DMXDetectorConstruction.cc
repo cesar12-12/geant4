@@ -582,6 +582,8 @@ G4VPhysicalVolume* DMXDetectorConstruction::Construct() {
 
   G4Tubs solidTopSt2 = new G4Tubs ("solidTopSt2", rmin1, rmaxleadSt, 0.5*ShieldStwidth, phimin, phimax);
   logicTopSt2 = new G4LogicalVolume( solidTopSt2, shieldcover_mat, "logicTopSt2");  
+
+
   //TABLE
 
   G4Box* solidTable = new G4Box("solidTable",tableX,tableX,0.5*tableY);
@@ -604,6 +606,8 @@ G4VPhysicalVolume* DMXDetectorConstruction::Construct() {
 				"physiLeg3",logicLeg,lab_phys,false, checkOverlaps);
   physiLeg4 = new G4PVPlacement(0, G4ThreeVector(tableX-legX,-tableX+legX,legPos),
 				"physiLeg4",logicLeg,lab_phys,false, checkOverlaps);
+
+  // NEW TABLE CONSTRUCTION
 
   /*
   G4Cons* solidDewar1 = new G4Cons("solidDewar1",rinDew2,routDew2,rinDew1,routDew1,Dewheight1,phimin,phimax);
