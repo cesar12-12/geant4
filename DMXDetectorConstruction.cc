@@ -285,7 +285,9 @@ G4VPhysicalVolume* DMXDetectorConstruction::Construct() {
   G4double rmaxShield3 = rminShield3 + Shield3Width; //                                                          
   G4double HeadShieldWidth = 6*cm;
   G4double HeadPos = Shield1pos + 0.5*heightShield1 + 0.5*HeadShieldWidth; //  
-  
+ 
+  //New Lead Shield parameters
+ 
   G4double rminCu = 38*mm; //Min radius lining Cu part 1
   G4double LinCuwidth = 1.6*mm; //Width of Cu Graded Lining
   G4double rlinCu= rminCu + LinCuwidth; //Max radius of Graded Lining Cu
@@ -302,7 +304,8 @@ G4VPhysicalVolume* DMXDetectorConstruction::Construct() {
   G4double heightpart2 = 0.5*407*mm; // Height Part 2 Shield
   G4double rmaxlead = 244.5*mm; // Max radius of Cu and Pb lead
   G4double heightleadPb = 101.9*mm; // Height of Pb lead
-  G4double rmaxleadSt = rmaxlead + ShieldStwidth; // Max radius os Outer Jacket  Carbon Steel Lead
+  G4double rmaxleadSt = rmaxlead + ShieldStwidth; // Max radius of Outer Jacket  Carbon Steel Lead
+  G4double heightleadSt1 = heightleadPb+LinCuwidth // Height of lead Outer Jaccket Carbon Steel
 
 
  // -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-                                                                                   
@@ -551,7 +554,34 @@ G4VPhysicalVolume* DMXDetectorConstruction::Construct() {
   //NEW SHIELD CONSTRUCTION
 
   G4Tubs* LiningCu1 = new G4Tubs("LiningCu1", rminCu, rlinCu, heightpart1, phimin, phimax);
-  logicLin1 = new G$LogicalVolume( LinCu1, Cushield_mat, "logicLin1");  
+  logicLin1 = new G4LogicalVolume( LiningCu1, Cushield_mat, "logicLin1");
+
+  G4Tubs* solidShieldPb1 = new G4Tubs("solidShieldPb1", rlinCu, rPbShield, heightpart1, phimin, phimax);
+  logicShieldPb1 = new G4LogicalVolume( solidShieldPb1, Pbshield_mat, "logicShieldPb1");
+
+  G4Tubs* solidCoverSt1 = new G4Tubs("solidCoverSt1", rPbShield, rStShield, heightpart1, phimin, phimax);
+  logicCoverSt1 = new G4LogicalVolume("solidCoverSt1", shieldcover_mat, "logicCoverSt1");
+
+  G4Tubs* solidLinCu2 = new G4Tubs("solidLinCu2", rminCu2, rlinCu2, heightpart2, phimin, phimax);
+  logicLinCu2 = new G4LogicalVolume( solidLinCu2, Cushield_mat, "logicLinCu2");
+
+  G4Tubs* solidShieldPb2 = new G4Tubs("solidShieldPb2", rlinCu2, rPbshield2, heightpart2, phimin, phimax);
+  logicShieldPb2 = new G4LogicalVolume( solidShieldPb2, Pbshield_mat, "logicShieldPb2");
+
+  G4Tubs* solidCoverSt2 = new G4Tubs("SolidCoverSt2", rPbshield2, rStShield2, heightpart2 phimin, phimax);
+  logicCoverSt2 = new G4LogicalVolume( SolidCoverSt2, shieldcover_mat, "logicCoverSt2");
+
+  G4Tubs* solidTopCu = new G4Tubs("solidTopCu", rmin1, rmaxlead, 0.5*LinCuwidth, phimin, phimax);
+  logicTopCu = new G4LogicalVolume( solidTopCu, Cushield_mat, "logicTopCu");
+
+  G4Tubs* solidTopPb = new G4Tubs("solidTopPb", rmin1, rmaxlead, 0.5*heightleadPb, phimin, phimax);
+  logicTopPb= new G4LogicalVolume( solidTopPb, Pbshield_mat, "logicTopPb");
+
+  G4Tubs* solidTopSt1 = new G4Tubs("solidTopSt1", rmaxlead, rmaxleadSt, 0.5*heightleadSt1, phimin, phimax);
+  logicTopSt1 = new G4LogicalVolume( solidTopSt1, shieldcover_mat, "logicTopSt1");
+
+  G4Tubs solidTopSt2 = new G4Tubs ("solidTopSt2", rmin1, rmaxleadSt, 0.5*ShieldStwidth, phimin, phimax);
+  logicTopSt2 = new G4LogicalVolume( solidTopSt2, shieldcover_mat, "logicTopSt2");  
   //TABLE
 
   G4Box* solidTable = new G4Box("solidTable",tableX,tableX,0.5*tableY);
