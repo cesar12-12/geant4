@@ -609,6 +609,8 @@ G4VPhysicalVolume* DMXDetectorConstruction::Construct() {
 
   // NEW TABLE CONSTRUCTION
 
+  G4Box* solidTable = new G4Box("solidTable",tableX,tableX,0.5*tableY);
+
   /*
   G4Cons* solidDewar1 = new G4Cons("solidDewar1",rinDew2,routDew2,rinDew1,routDew1,Dewheight1,phimin,phimax);
   logicDewar1 = new G4LogicalVolume( solidDewar1, panel_mat, "logicDewar1");
